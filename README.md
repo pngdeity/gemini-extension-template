@@ -1,83 +1,90 @@
-# Arm MCP Gemini CLI Extension
+# Gemini CLI Extension Template
 
-This repository contains a Gemini CLI extension that adds:
+A companion repository template that lists an MCP server in the
+[Gemini CLI Extension Gallery](https://geminicli.com/extensions) without
+touching the original project's repository.
 
-* the Arm MCP Server Docker configuration
-* a reusable `/arm-migration` custom command for x86-to-Arm migration work
-* reusable custom commands for hotspot optimization, full optimization, and Arm-vs-x86 comparison workflows
-* install-time prompts for the project root plus the SSH key material needed to reach the target instance for Arm Performix profiling
+## What this template is for
 
-## Files
+The Gemini CLI Extension Gallery auto-discovers extensions from public GitHub
+repositories that contain a valid `gemini-extension.json` manifest.  If you
+own an MCP server but do not want to add that manifest to your main project
+repo, fork or generate a new repository from this template and fill in the
+placeholders instead.
 
-* `gemini-extension.json`: Gemini CLI extension manifest with the bundled MCP server configuration
-* `commands/arm-migration.toml`: custom slash command prompt
-* `commands/arm-hotspots-optimization.toml`: beginner-friendly hotspot optimization workflow
-* `commands/arm-full-optimization.toml`: advanced multi-recipe optimization workflow
-* `commands/arm-vs-x86-performance-comparison.toml`: x86-vs-Arm comparison workflow
+## How to use this template
 
-## MCP server config
+### 1. Create a new repository from this template
 
-During install, Gemini CLI should prompt for:
+Click **Use this template → Create a new repository** at the top of this page,
+or fork it.  Name the new repo something descriptive, for example
+`your-mcp-server-gemini-extension`.
 
-* `Project Root Directory`: the absolute path to the root of the user's project source tree, not a parent workspace folder unless the project itself lives there
-* `Arm Performix SSH Private Key`: the absolute path to the SSH private key file used to SSH into the target instance for Arm Performix profiling
-* `Arm Performix SSH Known Hosts`: the absolute path to the `known_hosts` file used when SSHing into the target instance for Arm Performix profiling
+### 2. Edit `gemini-extension.json`
 
-```json
-{
-  "name": "arm-mcp-gemini",
-  "version": "1.1.0",
-  "description": "Gemini CLI extension that adds the Arm MCP Server plus /arm-migration, /arm-hotspots-optimization, /arm-full-optimization, and /arm-vs-x86-performance-comparison workflow commands.",
-  "settings": [
-    {
-      "name": "Project Directory",
-      "description": "Absolute host path to the root directory of the project code you want mounted into the Arm MCP Server for running code scan.",
-      "envVar": "ARM_MCP_PROJECT_ROOT",
-      "sensitive": false
-    },
-    {
-      "name": "Arm Performix SSH Private Key",
-      "description": "Absolute host path to the SSH private key file used to SSH into the target instance for Arm Performix profiling.",
-      "envVar": "ARM_MCP_SSH_PRIVATE_KEY",
-      "sensitive": true
-    },
-    {
-      "name": "Arm Performix SSH Known Hosts",
-      "description": "Absolute host path to the known_hosts file used when SSHing into the target instance for Arm Performix profiling.",
-      "envVar": "ARM_MCP_SSH_KNOWN_HOSTS",
-      "sensitive": false
-    }
-  ],
-  "mcpServers": {
-    "arm_mcp_server": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "--pull=always",
-        "-i",
-        "-v",
-        "${ARM_MCP_PROJECT_ROOT}:/workspace",
-        "-v",
-        "${ARM_MCP_SSH_PRIVATE_KEY}:/run/keys/ssh-key.pem:ro",
-        "-v",
-        "${ARM_MCP_SSH_KNOWN_HOSTS}:/run/keys/known_hosts:ro",
-        "armlimited/arm-mcp:latest"
-      ],
-      "env": {},
-      "timeout": 60000
-    }
-  }
-}
+Open `gemini-extension.json` and replace every placeholder value.
+
+| Field | Description |
+|---|---|
+| `name` | Unique extension identifier (lowercase, hyphens only). Must match the slug the Gallery will index. |
+| `version` | Semantic version string (`MAJOR.MINOR.PATCH`). Increment this whenever you ship a change. |
+| `description` | One-sentence summary shown in the Gallery listing. |
+| `settings` | List of environment variables Gemini CLI will prompt the user to configure at install time. Set `"sensitive": true` for secrets such as API keys or private key paths. Remove the array entirely if your MCP server needs no configuration. |
+| `mcpServers` | Map of one or more MCP server definitions. The key becomes the server name inside Gemini CLI. |
+
+**`mcpServers` entry fields:**
+
+| Field | Description |
+|---|---|
+| `command` | The executable Gemini CLI runs to start the server (e.g. `npx`, `docker`, `uvx`). |
+| `args` | Arguments passed to `command`. Use `${YOUR_ENV_VAR_NAME}` to interpolate values the user provided through `settings`. |
+| `env` | Additional environment variables to set in the server process. |
+| `timeout` | Milliseconds Gemini CLI waits for the server to start (default `60000`). |
+
+### 3. Add or edit slash commands (optional)
+
+Any `.toml` file inside the `commands/` directory becomes a custom slash
+command.  The filename (without `.toml`) is the command name.
+
+Each file must have at least a `prompt` key:
+
+```toml
+description = "One-line description shown in the /help list."
+
+prompt = """
+The instruction text sent to Gemini when the user runs this command.
+Reference MCP tools with their fully-qualified name: your_mcp_server/tool_name.
+"""
 ```
 
-## Commands
+Rename or delete `commands/example-command.toml` and add as many command files
+as you need.  Remove the `commands/` directory entirely if you do not need
+custom commands.
 
-Gemini CLI loads extension commands automatically from the `commands/` directory, and the command name is derived from the filename.
+### 4. Push and wait for the Gallery to index your extension
 
-Use these commands after the extension is installed and the MCP config is active:
+Once your repository is public and `gemini-extension.json` is valid, the
+Gemini CLI Extension Gallery will automatically discover and list your
+extension.  See the
+[official releasing guide](https://geminicli.com/docs/extensions/releasing/)
+for the full requirements and any additional steps needed to trigger indexing.
 
-* `/arm-migration`: migrate a codebase from x86 to Arm with the Arm MCP server
-* `/arm-hotspots-optimization`: guide a beginner through hotspot-driven Arm tuning
-* `/arm-full-optimization`: run an advanced iterative optimization workflow across multiple APX recipes
-* `/arm-vs-x86-performance-comparison`: compare the same workload on x86 and Arm systems
+## File reference
+
+```
+gemini-extension.json   # Extension manifest — the only required file
+commands/               # Optional custom slash commands (one .toml per command)
+└── example-command.toml
+```
+
+## Tips
+
+- **Versioning:** bump `version` in `gemini-extension.json` every time you
+  update the extension so users receive the latest configuration.
+- **Sensitive settings:** mark any setting that holds a secret or private key
+  path with `"sensitive": true`; Gemini CLI will mask it in the UI.
+- **Multiple MCP servers:** add additional entries under `mcpServers` if your
+  extension wraps more than one server.
+- **Environment variable interpolation:** `${VAR_NAME}` in `args` is replaced
+  at runtime with the value the user supplied for the matching `envVar`.
+

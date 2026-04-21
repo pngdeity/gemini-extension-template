@@ -1,0 +1,17 @@
+description = "Brief description of what this slash command does."
+
+prompt = """
+Write the system prompt for your custom slash command here.
+
+This text is sent to Gemini as the leading instruction whenever a user runs /example-command.
+You can reference MCP server tools by their fully-qualified name (e.g. your_mcp_server/tool_name).
+
+Example structure:
+* State the goal of the command in one sentence.
+* List the steps Gemini should follow.
+* Describe any tool calls it should make and in what order.
+* Specify the expected output format.
+
+Delete this file or rename it to match the slash command you want to expose
+(the filename without the .toml extension becomes the command name).
+"""
